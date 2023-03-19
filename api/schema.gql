@@ -4,7 +4,8 @@
 # -----------------------------------------------
 
 type CallResponse {
-  data: Boolean!
+  data: String!
+  error: Boolean!
 }
 
 type Interest {
@@ -17,22 +18,37 @@ type Mutation {
   createUser(user: UserInput!): User!
 
   """Login A User"""
-  login(email: String!, password: String!, phone: String!): User!
+  login(email: String, password: String!, phone: String): User!
+
+  """Reset Password"""
+  resetPassword(email: String!, password: String!): User!
+
+  """Send Recovery link to email"""
+  sendRecoveryLink(email: String!): CallResponse!
 
   """Send SMS to Phone"""
-  sendSMSToken(number: String!): CallResponse
+  sendSMSToken(phone: String!): CallResponse
 
   """Send Email Verification Link"""
   sendVerificationEmail(email: String!): CallResponse
+
+  """Update user info"""
+  updateUser(id: ID!, user: UserUpdateInput!): User
 
   """Verify Email Link"""
   verifyEmailLink(link: String!): CallResponse!
 
   """Verify Phone Token"""
   verifyPhoneToken(token: String!): CallResponse!
+
+  """Verify Recovery Password token"""
+  verifyRecoveryToken(token: String!): CallResponse!
 }
 
 type Query {
+  """Get A User by ID"""
+  getProfile: User
+
   """Get A User by ID"""
   getUser(id: Int!): User
 
@@ -49,15 +65,15 @@ type Token {
 
 type User {
   email: String!
-  emailVerified: Boolean!
+  emailVerified: Boolean
   id: ID!
   interestIds: String
   interests: [Interest!]
   name: String!
   phone: String!
   phoneVerified: Boolean
-  token: Token
   tokenId: ID
+  userToken: Token
 }
 
 input UserInput {
@@ -66,4 +82,11 @@ input UserInput {
   name: String!
   password: String!
   phone: String!
+}
+
+input UserUpdateInput {
+  email: String
+  name: String
+  password: String
+  phone: String
 }

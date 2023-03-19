@@ -18,6 +18,18 @@ function queryStringBuilder(
   return queryString;
 }
 
+export const graphResetPassword = (
+  user?: (keyof IUser)[],
+  nestedValues?: NestedUserObject
+) => {
+  const query = user ? queryStringBuilder(user, nestedValues) : "id";
+  return gql`
+    mutation resetPassword($email: String!, $password: String!) {
+        user : resetPassword(email: $email, password: $password) {
+            ${query}
+        }
+    }`;
+};
 export const graphGetUserToken = (
   user?: (keyof IToken)[],
   nestedValues?: NestedUserObject
@@ -25,12 +37,24 @@ export const graphGetUserToken = (
   const query = user ? queryStringBuilder(user, nestedValues) : "id";
   return gql`
     query getUserToken($id: Int) {
-        token : getUserToken(_id: $id) {
+        token : getUserToken(id: $id) {
             ${query}
         }
     }`;
 };
 //d
+export const graphGetProfile = (
+  user?: (keyof IUser)[],
+  nestedValues?: NestedUserObject
+) => {
+  const query = user ? queryStringBuilder(user, nestedValues) : "id";
+  return gql`
+    query getProfile {
+      user: getProfile {
+        ${query}
+      }
+    }`;
+};
 export const graphGetUser = (
   user?: (keyof IUser)[],
   nestedValues?: NestedUserObject
@@ -38,7 +62,7 @@ export const graphGetUser = (
   const query = user ? queryStringBuilder(user, nestedValues) : "id";
   return gql`
     query getUser($id: Int) {
-        user : getUser(_id: $id) {
+        user : getUser(id: $id) {
             ${query}
         }
     }`;
@@ -49,7 +73,7 @@ export const graphUpdateUser = (
 ) => {
   const query = user ? queryStringBuilder(user, nestedValues) : "id";
   return gql`
-    mutation updateUser($id: Int, $user: UserInput) {
+    mutation updateUser($id: ID!, $user: UserUpdateInput!) {
         user : updateUser(id: $id, user: $user) {
             ${query}
         }
@@ -61,20 +85,20 @@ export const graphCreateUser = (
 ) => {
   const query = user ? queryStringBuilder(user, nestedValues) : "id";
   return gql`
-    mutation createUser($user: UserInput) {
+    mutation createUser($user: UserInput!) {
         user : createUser(user: $user) {
             ${query}
         }
     }`;
 };
-export const login = (
+export const graphLogin = (
   user?: (keyof IUser)[],
   nestedValues?: NestedUserObject
 ) => {
   const query = user ? queryStringBuilder(user, nestedValues) : "id";
   return gql`
-    mutation login($password: String, $phone: String, $email: String) {
-        login : login(password: $password, phone: $phone, email: $email) {
+    mutation login($password: String!, $phone: String, $email: String) {
+        user : login(password: $password, phone: $phone, email: $email) {
             ${query}
         }
     }`;

@@ -5,10 +5,18 @@ import App from "./App";
 import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
 import reportWebVitals from "./reportWebVitals";
 import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
+import { appConfig } from "config/config";
+import { Provider } from "react-redux";
+import store from "redux/store";
 
 const client = new ApolloClient({
-  uri: "http://localhost:8080/graphql",
+  uri: appConfig.endpoint,
   cache: new InMemoryCache(),
+  headers: {
+    authorization: `App ${localStorage.getItem(
+      appConfig.localStorageTokenAlias
+    )}`,
+  },
 });
 
 const root = ReactDOM.createRoot(
@@ -18,7 +26,9 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <ApolloProvider client={client}>
-      <App />
+      <Provider store={store}>
+        <App />
+      </Provider>
     </ApolloProvider>
   </React.StrictMode>
 );

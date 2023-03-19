@@ -7,16 +7,16 @@ export interface IUser {
   password?: string;
   emailVerified?: string;
   phoneVerified?: string;
-  tokenId?: number;
+  // tokenId?: number;
   interestIds?: string;
-  token?: IToken;
+  userToken?: IToken;
   interests?: IInterest[];
 }
 
 export interface IToken {
   id: number;
   token: string;
-  userId?: number;
+  // userId?: number;
 }
 
 export interface IInterest {
@@ -27,7 +27,7 @@ export interface IInterest {
 export type IQueryArray = (keyof (IToken & IInterest))[];
 
 export interface NestedUserObject {
-  token?: (keyof IToken)[];
+  userToken?: (keyof IToken)[];
   interests?: (keyof IInterest)[];
 }
 

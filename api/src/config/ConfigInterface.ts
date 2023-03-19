@@ -3,7 +3,9 @@ import { BuildSchemaOptions } from "type-graphql";
 
 export default interface ConfigInterface {
   readonly env: "development" | "test" | "staging" | "production";
-  front_end_link: string;
+  frontEndLink: string;
+  emailVerifyPath: string;
+  resetPasswordPath: string;
   tokenExpiration: number;
   readonly email: {
     address?: string;

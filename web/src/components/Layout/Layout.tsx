@@ -5,6 +5,7 @@ import AppHeader from "./Header";
 import { AppTheme } from "utils";
 import { useMediaQuery, useTheme } from "@mui/material";
 import AppBottomNavigation from "components/BottomNavigation/BottomNavigation";
+import { AppAdapter } from "adapter";
 const style = makeStyles(({ breakpoints }: AppTheme) => {
   return {
     root: {},
@@ -25,14 +26,16 @@ function Layout({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
   const onlySmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   return (
-    <div className={classes.display}>
-      <AppHeader />
-      <div className={classNames(classes.appPager, classes.stage)}>
-        {/* <CustomBreadCrumb/> */}
-        {children}
+    <AppAdapter>
+      <div className={classes.display}>
+        <AppHeader />
+        <div className={classNames(classes.appPager, classes.stage)}>
+          {/* <CustomBreadCrumb/> */}
+          {children}
+        </div>
+        {onlySmallScreen && <AppBottomNavigation />}
       </div>
-      {onlySmallScreen && <AppBottomNavigation />}
-    </div>
+    </AppAdapter>
   );
 }
 Layout.propTypes = {};

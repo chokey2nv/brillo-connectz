@@ -1,21 +1,26 @@
-import { IconButton, Popover, useMediaQuery, useTheme } from "@mui/material";
+import {
+  Button,
+  IconButton,
+  Popover,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 import { AppBar, Toolbar } from "@mui/material";
-import React from "react";
 import { Link } from "react-router-dom";
 import { routeNames } from "utils/routes";
 
 import { styled } from "@mui/material/styles";
-import { Theme } from "@mui/material";
-import { AppTheme } from "utils/theme";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import { useState } from "react";
+import { useSelector } from "react-redux";
+import { selectUser } from "redux/user.core";
 
 const ILink = styled(Link)(() => ({
   margin: 10,
+  textDecoration: "none",
 }));
 const StyledLink = styled(ILink)(({ theme }) => ({
   color: "white",
-  textDecoration: "none",
 }));
 const Image = styled("img")(() => ({
   height: 50,
@@ -28,6 +33,7 @@ export default function AppHeader() {
   const theme = useTheme();
   const onlyBigScreen = useMediaQuery(theme.breakpoints.up("sm"));
   const [anchorEl, setAnchorEl] = useState<Element>();
+  const user = useSelector(selectUser);
   return (
     <AppBar elevation={0}>
       <Toolbar>
@@ -35,24 +41,33 @@ export default function AppHeader() {
         <Space />
         {onlyBigScreen && (
           <div>
+            <StyledLink to={routeNames.home}>Home</StyledLink>
             <StyledLink to={routeNames.discover}>Discover</StyledLink>
             <StyledLink to={routeNames.buddies}>Buddies</StyledLink>
           </div>
         )}
-        <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-          <AccountCircle />
-        </IconButton>
+        <Button
+          variant="text"
+          style={{ background: "transparent", color: "white" }}
+          onClick={(e) => setAnchorEl(e.currentTarget)}
+        >
+          <AccountCircle style={{ marginRight: 10 }} /> {user?.name}
+        </Button>
       </Toolbar>
       <Popover
+        PaperProps={{
+          style: {
+            width: 150,
+          },
+        }}
         open={!!anchorEl}
         anchorEl={anchorEl}
         onClose={() => setAnchorEl(undefined)}
         anchorOrigin={{
           vertical: "bottom",
-          horizontal: "left",
+          horizontal: "right",
         }}
         onClick={() => setAnchorEl(undefined)}
-        style={{ width: 200 }}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <ILink to={routeNames.profile} style={{ color: "black" }}>

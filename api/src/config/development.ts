@@ -4,7 +4,9 @@ import ConfigInterface from "./ConfigInterface";
 const config: ConfigInterface = {
   env: "development",
   secret: "hide_this_secret",
-  front_end_link: "http://localhost:3000",
+  frontEndLink: "http://localhost:3000",
+  emailVerifyPath: "/email/verify",
+  resetPasswordPath: "/pass/recovery",
   tokenExpiration: 5 * 1000 * 60,
   email: {
     address: process.env.EMAIL,

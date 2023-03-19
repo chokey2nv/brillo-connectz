@@ -16,6 +16,11 @@ import { routeNames } from "utils";
 import classNames from "classnames";
 import { IFormSignUp } from "./types";
 import { useCallback } from "react";
+import { useUser } from "graphql.hooks/user";
+import { IUser } from "graphql.queries/types";
+import { appConfig } from "config/config";
+import { useAppDispatch } from "redux/hook";
+import { displayNotice } from "redux/notice.core";
 
 const useStyle = makeStyles(() => ({
   root: {
@@ -72,11 +77,14 @@ const useStyle = makeStyles(() => ({
 }));
 export default function LoginPage() {
   const classes = useStyle();
+  const { createUser } = useUser();
+  const dispatch = useAppDispatch();
   const [state, _setState] = useState<Partial<IFormSignUp>>({
     interests: [],
     email: "",
     phone: "",
     password: "",
+    name: "",
   });
   const setState = (state: Partial<IFormSignUp>) =>
     _setState((_state: Partial<IFormSignUp>) => ({ ..._state, ...state }));
@@ -110,8 +118,42 @@ export default function LoginPage() {
     },
     [JSON.stringify(invalidFields)]
   );
-  const signup = useCallback(() => {
-    if (validateValues(state as IFormSignUp)) {
+  const signup = useCallback(async () => {
+    if (!validateValues(state as IFormSignUp)) {
+      return dispatch(
+        displayNotice({
+          type: "error",
+          message: "Invalid form input, please check form",
+        })
+      );
+    }
+    try {
+      const { data, errors } = await createUser({
+        variables: {
+          user: state as Partial<IUser>,
+        },
+      });
+      if (errors && errors.length > 0) {
+        return dispatch(
+          displayNotice({
+            message: errors[0].message,
+            type: "error",
+          })
+        );
+      }
+      const user = data?.user as IUser;
+      localStorage.setItem(
+        appConfig.localStorageTokenAlias,
+        user.userToken?.token as string
+      );
+      window.location.href = routeNames.home;
+    } catch (e) {
+      return dispatch(
+        displayNotice({
+          message: (e as Error).message,
+          type: "error",
+        })
+      );
     }
   }, [JSON.stringify(state)]);
   return (
@@ -134,6 +176,17 @@ export default function LoginPage() {
           autoComplete="off"
           className={classes.box}
         >
+          <TextField
+            className={classes.field}
+            error={invalidFields?.includes("name")}
+            fullWidth
+            id="name"
+            name="name"
+            label="Full Name"
+            onChange={(e) => {
+              setFieldValue("name", e.target.value);
+            }}
+          />
           <TextField
             className={classes.field}
             error={invalidFields?.includes("email")}

@@ -1,32 +1,38 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import { makeStyles } from "@mui/styles";
-import {
-  Button,
-  Checkbox,
-  FormControl,
-  FormControlLabel,
-  FormGroup,
-  FormHelperText,
-  FormLabel,
-} from "@mui/material";
-import { Link } from "react-router-dom";
-import { routeNames } from "utils";
+import { Button, FormLabel, Tab, Tabs } from "@mui/material";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { AppTheme, routeNames } from "utils";
 import classNames from "classnames";
-import { IFormSignUp } from "./types";
-import { useCallback } from "react";
+import { IFormLogin } from "./types";
+import { useUser } from "graphql.hooks/user";
+import { appConfig } from "config/config";
+import { IUser } from "graphql.queries/types";
+import { useToken } from "graphql.hooks/token";
+import { useDispatch } from "react-redux";
+import { displayNotice } from "redux/notice.core";
 
-const useStyle = makeStyles(() => ({
+const useStyle = makeStyles((theme: AppTheme) => ({
   root: {
-    background: "url('/assets/b_bg.svg') no-repeat center center / cover",
     paddingTop: 50,
-    height: "100%",
+    height: "100vh",
+    background: "url('/assets/b_bg.svg') no-repeat center center / cover",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
     overflow: "auto",
+  },
+  loading: {
+    height: "100vh",
+    display: "flex",
+    alignItems: "center",
+    fontWeight: "bold",
+    fontSize: 24,
+    justifyContent: "center",
+    flexDirection: "column",
   },
   headerContainer: {
     display: "flex",
@@ -53,9 +59,7 @@ const useStyle = makeStyles(() => ({
   },
   field: {
     margin: "10px !important",
-    borderColor: "white",
   },
-  input: {},
   btn: {
     marginTop: 20,
   },
@@ -69,61 +73,143 @@ const useStyle = makeStyles(() => ({
   link: {
     textDecoration: "none",
   },
+  btnOutline: {
+    textTransform: "capitalize !important" as any,
+    color: `${theme.colors.colorPrimary} !important`,
+    borderColor: `${theme.colors.colorPrimary} !important`,
+  },
+  formBtn: {
+    marginTop: "10px !important",
+    marginRight: "10px !important",
+  },
 }));
-export default function ForgotPassPage() {
+interface IFormNewPassword {
+  password: string;
+  cPassword: string;
+  email: string;
+}
+export default function LoginPage() {
   const classes = useStyle();
-  const [state, _setState] = useState<Partial<IFormSignUp>>({
-    interests: [],
-    email: "",
-    phone: "",
+  const dispatch = useDispatch();
+  const { resetPassword } = useUser();
+  const { verifyRecoveryToken } = useToken();
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const [state, _setState] = useState<Partial<IFormNewPassword>>({
+    cPassword: "",
     password: "",
+    email: "",
   });
-  const setState = (state: Partial<IFormSignUp>) =>
-    _setState((_state: Partial<IFormSignUp>) => ({ ..._state, ...state }));
-  const setFieldValue = (name: keyof IFormSignUp, value: string) =>
+  const setState = (state: Partial<IFormNewPassword>) =>
+    _setState((_state: Partial<IFormNewPassword>) => ({ ..._state, ...state }));
+  const setFieldValue = (name: keyof IFormNewPassword, value: string) =>
     setState({ [name]: value });
-  const [invalidFields, setInvalidFields] = useState<(keyof IFormSignUp)[]>();
-  const validateValues = useCallback(
-    (values: IFormSignUp) => {
-      const fields = invalidFields || [];
-      for (const name in values) {
-        if (Object.prototype.hasOwnProperty.call(values, name)) {
-          const value = values[name as keyof IFormSignUp];
-          const key = name as keyof IFormSignUp;
-          if (typeof value === "string") {
-            if (value === "") {
-              !fields.includes(key) && fields?.push(key);
-            } else if (fields?.includes(key)) {
-              fields.splice(fields.indexOf(key), 1);
-            }
-          } else if (Array.isArray(value)) {
-            if (value?.length === 0) {
-              !fields.includes(key) && fields?.push(key);
-            } else {
-              fields?.splice(fields?.indexOf(key), 1);
-            }
-          }
-        }
+
+  const [page, setPage] = useState<"verify" | "recover">("verify");
+  const [errMessage, setErrMessage] = useState<string>();
+  console.log(state);
+  const onResetPassword = useCallback(async () => {
+    if (!state.email) {
+      return dispatch(
+        displayNotice({
+          type: "error",
+          message: "Missing email",
+        })
+      );
+    } else if (state.cPassword !== state.password) {
+      return dispatch(
+        displayNotice({
+          type: "error",
+          message: "Missing password",
+        })
+      );
+    }
+    try {
+      const { errors } = await resetPassword({
+        variables: {
+          password: String(state.password),
+          email: String(state.email),
+        },
+      });
+      if (errors) {
+        return dispatch(
+          displayNotice({
+            type: "error",
+            message: errors[0].message,
+          })
+        );
+        return;
       }
-      setInvalidFields([...fields]);
-      return fields?.length === 0;
-    },
-    [JSON.stringify(invalidFields)]
-  );
-  const signup = useCallback(() => {
-    if (validateValues(state as IFormSignUp)) {
+      setErrMessage("Password reset successful!");
+      setPage("verify");
+      return dispatch(
+        displayNotice({
+          type: "success",
+          message: "Password Reset Successful",
+        })
+      );
+      // navigate(routeNames.login, { replace: true });
+    } catch (e) {
+      return dispatch(
+        displayNotice({
+          type: "error",
+          message: (e as Error).message,
+        })
+      );
     }
   }, [JSON.stringify(state)]);
-  return (
+
+  useEffect(() => {
+    (async () => {
+      if (id) {
+        try {
+          const { errors } = await verifyRecoveryToken({
+            variables: {
+              token: id.toString(),
+            },
+          });
+          if (errors) {
+            setErrMessage(errors[0].message);
+            return;
+          }
+          setPage("recover");
+        } catch (e) {
+          setErrMessage((e as Error).message);
+        }
+      }
+    })();
+  }, [id]);
+  return page === "verify" ? (
+    <div className={classes.loading}>
+      <img src="/assets/b_logo.png" style={{ height: 100 }} />
+      <span>{errMessage || "Verifying link..."}</span>
+      {errMessage && (
+        <span>
+          <Button
+            className={classes.formBtn}
+            classes={{
+              outlined: classes.btnOutline,
+            }}
+            variant="outlined"
+            size="small"
+            onClick={() => navigate(routeNames.login)}
+          >
+            Back to login
+          </Button>
+        </span>
+      )}
+    </div>
+  ) : (
     <div className={classes.root}>
       <div className={classes.headerContainer}>
         <img
           src="/assets/b_logo.png"
           className={classes.img}
-          alt="brilliantConnectz"
+          alt="brillianconnectz"
         />
-        <strong>Sign Up</strong>
+        <strong>Reset Password</strong>
       </div>
+
       <div className={classes.formContainer}>
         <Box
           component="form"
@@ -136,83 +222,51 @@ export default function ForgotPassPage() {
         >
           <TextField
             className={classes.field}
-            error={invalidFields?.includes("email")}
             fullWidth
             id="email"
-            name="email"
-            label="E-mail"
-            onChange={(e) => {
-              setFieldValue("email", e.target.value);
-            }}
+            label="Email"
+            type="email"
+            value={state.email}
+            // error={invalidFields?.includes("password")}
+            onChange={({ target }) => setFieldValue("email", target.value)}
           />
           <TextField
             className={classes.field}
-            error={invalidFields?.includes("phone")}
-            fullWidth
-            id="phone"
-            name="phone"
-            label="Phone Number"
-            onChange={(e) => {
-              setFieldValue("phone", e.target.value);
-            }}
-          />
-          <TextField
-            className={classes.field}
-            error={invalidFields?.includes("password")}
             fullWidth
             id="password"
-            type="password"
             label="Password"
-            onChange={(e) => {
-              setFieldValue("password", e.target.value);
-            }}
+            type="password"
+            value={state.password}
+            // error={invalidFields?.includes("password")}
+            onChange={({ target }) => setFieldValue("password", target.value)}
           />
-          <FormControl
-            fullWidth
+          <TextField
             className={classes.field}
-            error={invalidFields?.includes("interests")}
-          >
-            <FormLabel>Select your interests</FormLabel>
-            <FormGroup>
-              {hobbies.map((hobby, index) => {
-                return (
-                  <FormControlLabel
-                    key={index}
-                    control={
-                      <Checkbox
-                        checked={state?.interests?.includes(hobby)}
-                        value={hobby}
-                        onChange={({ target }) => {
-                          const interests = state.interests || [];
-                          if (target.checked) {
-                            interests?.push(hobby);
-                          } else interests?.splice(interests.indexOf(hobby), 1);
-                          setState({ interests });
-                        }}
-                      />
-                    }
-                    label={hobby}
-                    value={hobby}
-                    onChange={(e) => {
-                      console.log(e.target);
-                    }}
-                  />
-                );
-              })}
-            </FormGroup>
-          </FormControl>
+            fullWidth
+            id="cPassword"
+            label="Confirm Password"
+            type="password"
+            value={state.cPassword}
+            // error={invalidFields?.includes("password")}
+            onChange={({ target }) => setFieldValue("cPassword", target.value)}
+          />
           <Button
             className={classNames(classes.field, classes.btn)}
             fullWidth
+            // onClick={sendLink}
             color="primary"
             variant="contained"
-            onClick={signup}
+            onClick={onResetPassword}
           >
-            Sign Up
+            Recover Password
           </Button>
           <div className={classNames(classes.field, classes.btnContainer)}>
-            <Link className={classes.link} to={routeNames.login}>
-              Login
+            <Link
+              to="#"
+              className={classes.link}
+              onClick={() => navigate(routeNames.login)}
+            >
+              Back to Login
             </Link>
           </div>
         </Box>
@@ -220,14 +274,3 @@ export default function ForgotPassPage() {
     </div>
   );
 }
-
-const hobbies: string[] = [
-  "Football",
-  "Basketball",
-  "Ice Hockey",
-  "Motorsports",
-  "Bandy",
-  "Rugby",
-  "Skiing",
-  "Shooting",
-];

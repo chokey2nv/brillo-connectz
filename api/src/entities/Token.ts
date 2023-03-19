@@ -1,5 +1,11 @@
 import { Field, ID, ObjectType } from "type-graphql";
-import { Column, Entity, PrimaryGeneratedColumn, OneToOne } from "typeorm";
+import {
+  Column,
+  Entity,
+  PrimaryGeneratedColumn,
+  OneToOne,
+  JoinColumn,
+} from "typeorm";
 import User from "./User";
 
 @ObjectType("Token")
@@ -13,6 +19,7 @@ export default class Token {
   @Column("varchar", { nullable: false })
   token!: string;
 
+  //USED FOR SERVER DB
   @Field(() => ID)
   @Column("int", { nullable: true })
   userId!: number;
@@ -24,6 +31,7 @@ export default class Token {
   emailLink!: String;
 
   @Field(() => User)
-  @OneToOne(() => User, (user) => user.token)
+  @JoinColumn()
+  @OneToOne(() => User, (user) => user.userToken)
   user!: User;
 }
